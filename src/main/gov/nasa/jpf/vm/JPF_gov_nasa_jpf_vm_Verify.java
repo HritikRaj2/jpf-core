@@ -269,6 +269,18 @@ public class JPF_gov_nasa_jpf_vm_Verify extends NativePeer {
     }
   }
 
+  @MJI
+  public static int getThreadBlockedCount__Ljava_lang_Thread_2__I (MJIEnv env, int clsObjRef, int threadRef) {
+    ThreadInfo ti = env.getVM().getThreadList().getThreadInfoForObjRef(threadRef);
+    return ti != null ? ti.getBlockedCount() : 0;
+  }
+
+  @MJI
+  public static int getThreadWaitedCount__Ljava_lang_Thread_2__I (MJIEnv env, int clsObjRef, int threadRef) {
+    ThreadInfo ti = env.getVM().getThreadList().getThreadInfoForObjRef(threadRef);
+    return ti != null ? ti.getWaitedCount() : 0;
+  }
+
   // those are evil - use with extreme care. If something blocks inside of
   // an atomic section we have to raise an exception
   
