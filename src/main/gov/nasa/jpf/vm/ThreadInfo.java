@@ -582,6 +582,7 @@ public class ThreadInfo extends InfoObject
         vm.notifyThreadTerminated(this);
         break;
       case BLOCKED:
+        threadData.blockedCount++;
         assert lockRef != MJIEnv.NULL;
         vm.notifyThreadBlocked(this);
         break;
@@ -620,7 +621,6 @@ public class ThreadInfo extends InfoObject
       case RUNNING:
       case UNBLOCKED:
         lockRef = objref;
-        threadData.blockedCount++;
         setState(State.BLOCKED);
         break;
 
