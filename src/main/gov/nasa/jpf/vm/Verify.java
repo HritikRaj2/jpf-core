@@ -542,6 +542,22 @@ public class Verify {
 
   public native static void storeTrace (String fileName, String comment);
 
+  /**
+   * Returns the number of times the specified thread has transitioned to the BLOCKED state.
+   * This is intercepted by JPF.
+   */
+  public static int getThreadBlockedCount(Thread t) {
+    return 0; // intercepted by native peer
+  }
+
+  /**
+   * Returns the number of times the specified thread has transitioned to the WAITING or TIMEOUT_WAITING state.
+   * This is intercepted by JPF.
+   */
+  public static int getThreadWaitedCount(Thread t) {
+    return 0; // intercepted by native peer
+  }
+
   public static void storeTraceIf (boolean cond, String fileName, String comment) {
     if (cond) {
       storeTrace(fileName, comment);
