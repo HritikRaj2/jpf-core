@@ -1,0 +1,155 @@
+﻿diff --git a/src/main/gov/nasa/jpf/vm/JPF_gov_nasa_jpf_vm_Verify.java b/src/main/gov/nasa/jpf/vm/JPF_gov_nasa_jpf_vm_Verify.java
+index 2e7ac08..98874ba 100644
+--- a/src/main/gov/nasa/jpf/vm/JPF_gov_nasa_jpf_vm_Verify.java
++++ b/src/main/gov/nasa/jpf/vm/JPF_gov_nasa_jpf_vm_Verify.java
+@@ -269,6 +269,18 @@ public class JPF_gov_nasa_jpf_vm_Verify extends NativePeer {
+     }
+   }
+ 
++  @MJI
++  public static int getThreadBlockedCount__Ljava_lang_Thread_2__I (MJIEnv env, int clsObjRef, int threadRef) {
++    ThreadInfo ti = env.getVM().getThreadList().getThreadInfoForObjRef(threadRef);
++    return ti != null ? ti.getBlockedCount() : 0;
++  }
++
++  @MJI
++  public static int getThreadWaitedCount__Ljava_lang_Thread_2__I (MJIEnv env, int clsObjRef, int threadRef) {
++    ThreadInfo ti = env.getVM().getThreadList().getThreadInfoForObjRef(threadRef);
++    return ti != null ? ti.getWaitedCount() : 0;
++  }
++
+   // those are evil - use with extreme care. If something blocks inside of
+   // an atomic section we have to raise an exception
+ 
+diff --git a/src/main/gov/nasa/jpf/vm/ThreadData.java b/src/main/gov/nasa/jpf/vm/ThreadData.java
+index a00c031..cb3c178 100644
+--- a/src/main/gov/nasa/jpf/vm/ThreadData.java
++++ b/src/main/gov/nasa/jpf/vm/ThreadData.java
+@@ -54,6 +54,15 @@ public class ThreadData {
+    */
+   int suspendCount;
+ 
++  /**
++   * Number of times this thread has been in BLOCKED state
++   */
++  int blockedCount;
++
++  /**
++   * Number of times this thread has been in WAITING or TIMEOUT_WAITING state
++   */
++  int waitedCount;
+ 
+   @Override
+   public ThreadData clone () {
+@@ -62,6 +71,8 @@ public class ThreadData {
+     t.state = state;
+     t.lockCount = lockCount;
+     t.suspendCount = suspendCount;
++    t.blockedCount = blockedCount;
++    t.waitedCount = waitedCount;
+ 
+     t.priority = priority;
+     t.name = name;
+@@ -83,6 +94,8 @@ public class ThreadData {
+             (isDaemon == t.isDaemon) &&
+             (lockCount == t.lockCount) &&
+             (suspendCount == t.suspendCount) &&
++            (blockedCount == t.blockedCount) &&
++            (waitedCount == t.waitedCount) &&
+             (name.equals(t.name)));
+   }
+ 
+@@ -90,6 +103,8 @@ public class ThreadData {
+     hd.add(state);
+     hd.add(lockCount);
+     hd.add(suspendCount);
++    hd.add(blockedCount);
++    hd.add(waitedCount);
+     hd.add(priority);
+     hd.add(isDaemon);
+     hd.add(name);
+@@ -123,6 +138,10 @@ public class ThreadData {
+     sb.append(lockCount);
+     sb.append(",suspendCount:");
+     sb.append(suspendCount);
++    sb.append(",blockedCount:");
++    sb.append(blockedCount);
++    sb.append(",waitedCount:");
++    sb.append(waitedCount);
+ 
+     return sb.toString();
+   }
+diff --git a/src/main/gov/nasa/jpf/vm/ThreadInfo.java b/src/main/gov/nasa/jpf/vm/ThreadInfo.java
+index 785d526..805f95b 100644
+--- a/src/main/gov/nasa/jpf/vm/ThreadInfo.java
++++ b/src/main/gov/nasa/jpf/vm/ThreadInfo.java
+@@ -582,6 +582,7 @@ public class ThreadInfo extends InfoObject
+                     vm.notifyThreadTerminated(this);
+                     break;
+                 case BLOCKED:
++                    threadData.blockedCount++;
+                     assert lockRef != MJIEnv.NULL;
+                     vm.notifyThreadBlocked(this);
+                     break;
+@@ -589,9 +590,13 @@ public class ThreadInfo extends InfoObject
+                     assert lockRef == MJIEnv.NULL;
+                     break; // nothing to notify
+                 case WAITING:
++                    threadData.waitedCount++;
+                     assert lockRef != MJIEnv.NULL;
+                     vm.notifyThreadWaiting(this);
+                     break;
++                case TIMEOUT_WAITING:
++                    threadData.waitedCount++;
++                    break;
+                 case INTERRUPTED:
+                     vm.notifyThreadInterrupted(this);
+                     break;
+@@ -649,6 +654,20 @@ public class ThreadInfo extends InfoObject
+         return threadData.state;
+     }
+ 
++    /**
++     * Returns the number of times this thread transitioned to the BLOCKED state.
++     */
++    public int getBlockedCount () {
++        return threadData.blockedCount;
++    }
++
++    /**
++     * Returns the number of times this thread transitioned to the WAITING or TIMEOUT_WAITING state.
++     */
++    public int getWaitedCount () {
++        return threadData.waitedCount;
++    }
++
+ 
+     /**
+      * Returns true if this thread is either RUNNING or UNBLOCKED
+diff --git a/src/main/gov/nasa/jpf/vm/Verify.java b/src/main/gov/nasa/jpf/vm/Verify.java
+index f68ff57..0d9f3a6 100644
+--- a/src/main/gov/nasa/jpf/vm/Verify.java
++++ b/src/main/gov/nasa/jpf/vm/Verify.java
+@@ -542,6 +542,22 @@ public class Verify {
+ 
+     public native static void storeTrace (String fileName, String comment);
+ 
++    /**
++     * Returns the number of times the specified thread has transitioned to the BLOCKED state.
++     * This is intercepted by JPF.
++     */
++    public static int getThreadBlockedCount(Thread t) {
++        return 0; // intercepted by native peer
++    }
++
++    /**
++     * Returns the number of times the specified thread has transitioned to the WAITING or TIMEOUT_WAITING state.
++     * This is intercepted by JPF.
++     */
++    public static int getThreadWaitedCount(Thread t) {
++        return 0; // intercepted by native peer
++    }
++
+     public static void storeTraceIf (boolean cond, String fileName, String comment) {
+         if (cond) {
+             storeTrace(fileName, comment);
