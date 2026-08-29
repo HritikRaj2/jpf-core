@@ -582,6 +582,7 @@ public class ThreadInfo extends InfoObject
         vm.notifyThreadTerminated(this);
         break;
       case BLOCKED:
+        threadData.blockedCount++;
         assert lockRef != MJIEnv.NULL;
         vm.notifyThreadBlocked(this);
         break;
@@ -589,8 +590,12 @@ public class ThreadInfo extends InfoObject
         assert lockRef == MJIEnv.NULL;
         break; // nothing to notify
       case WAITING:
+        threadData.waitedCount++;
         assert lockRef != MJIEnv.NULL;
         vm.notifyThreadWaiting(this);
+        break;
+      case TIMEOUT_WAITING:
+        threadData.waitedCount++;
         break;
       case INTERRUPTED:
         vm.notifyThreadInterrupted(this);
@@ -647,6 +652,20 @@ public class ThreadInfo extends InfoObject
    */
   public State getState () {
     return threadData.state;
+  }
+
+  /**
+   * Returns the number of times this thread transitioned to the BLOCKED state.
+   */
+  public int getBlockedCount () {
+    return threadData.blockedCount;
+  }
+
+  /**
+   * Returns the number of times this thread transitioned to the WAITING or TIMEOUT_WAITING state.
+   */
+  public int getWaitedCount () {
+    return threadData.waitedCount;
   }
 
 
