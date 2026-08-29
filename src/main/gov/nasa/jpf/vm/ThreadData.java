@@ -54,6 +54,15 @@ public class ThreadData {
    */
   int suspendCount;
 
+  /**
+   * Number of times this thread has been in BLOCKED state
+   */
+  int blockedCount;
+
+  /**
+   * Number of times this thread has been in WAITING or TIMEOUT_WAITING state
+   */
+  int waitedCount;
 
   @Override
   public ThreadData clone () {
@@ -62,6 +71,8 @@ public class ThreadData {
     t.state = state;
     t.lockCount = lockCount;
     t.suspendCount = suspendCount;
+    t.blockedCount = blockedCount;
+    t.waitedCount = waitedCount;
 
     t.priority = priority;
     t.name = name;
@@ -83,6 +94,8 @@ public class ThreadData {
             (isDaemon == t.isDaemon) && 
             (lockCount == t.lockCount) &&
             (suspendCount == t.suspendCount) && 
+            (blockedCount == t.blockedCount) &&
+            (waitedCount == t.waitedCount) &&
             (name.equals(t.name)));
   }
 
@@ -90,6 +103,8 @@ public class ThreadData {
     hd.add(state);
     hd.add(lockCount);
     hd.add(suspendCount);
+    hd.add(blockedCount);
+    hd.add(waitedCount);
     hd.add(priority);
     hd.add(isDaemon);
     hd.add(name);
@@ -123,6 +138,10 @@ public class ThreadData {
     sb.append(lockCount);
     sb.append(",suspendCount:");
     sb.append(suspendCount);
+    sb.append(",blockedCount:");
+    sb.append(blockedCount);
+    sb.append(",waitedCount:");
+    sb.append(waitedCount);
 
     return sb.toString();
   }
